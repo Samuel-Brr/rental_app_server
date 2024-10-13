@@ -3,7 +3,6 @@ package com.rental.app.controllers;
 import com.rental.app.Utils.Mapper;
 import com.rental.app.dtos.LoginDto;
 import com.rental.app.dtos.RegisterDto;
-import com.rental.app.dtos.UserDto;
 import com.rental.app.entities.User;
 import com.rental.app.services.JwtService;
 import com.rental.app.services.UserInfoService;
@@ -84,13 +83,13 @@ public class AuthController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved user details",
                      content = @Content(mediaType = "application/json",
-                                        schema = @Schema(implementation = UserDto.class))
+                                        schema = @Schema(implementation = User.class))
         ),
         @ApiResponse(responseCode = "401", description = "Not authenticated"),
         @ApiResponse(responseCode = "404", description = "User not found")
     })
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserDto> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String token,
+    public ResponseEntity<User> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String token,
                                                   @RequestHeader HttpHeaders headers) {
         logger.info("Received request for /api/auth/me");
         logger.info("Authorization header: {}", token);
@@ -104,9 +103,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().build();
             }
 
-            UserDto userDto = new UserDto(jwtService.getCurrentUser());
-            logger.info("User retrieved successfully: {}", userDto);
-            return ResponseEntity.ok().body(userDto);
+            return ResponseEntity.ok().body(jwtService.getCurrentUser());
         } catch (Exception e) {
             logger.error("Error processing getCurrentUser request", e);
             return ResponseEntity.internalServerError().build();
