@@ -3,7 +3,6 @@ package com.rental.app.controllers;
 import com.rental.app.Utils.Mapper;
 import com.rental.app.dtos.LoginDto;
 import com.rental.app.dtos.RegisterDto;
-import com.rental.app.dtos.TokenDto;
 import com.rental.app.entities.User;
 import com.rental.app.services.JwtService;
 import com.rental.app.services.UserInfoService;
@@ -130,4 +129,6 @@ public class AuthController {
             throw new RuntimeException(INVALID_USER_REQUEST);
         }
     }
+
+    public record TokenDto(String token) {}
 }
