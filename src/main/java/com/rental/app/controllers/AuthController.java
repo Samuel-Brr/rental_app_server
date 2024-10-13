@@ -3,6 +3,7 @@ package com.rental.app.controllers;
 import com.rental.app.Utils.Mapper;
 import com.rental.app.dtos.LoginDto;
 import com.rental.app.dtos.RegisterDto;
+import com.rental.app.dtos.TokenDto;
 import com.rental.app.entities.User;
 import com.rental.app.services.JwtService;
 import com.rental.app.services.UserInfoService;
@@ -12,112 +13,121 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
  * Controller responsible for handling authentication-related operations.
  * This includes user registration, login, and retrieving current user information.
  */
+@Validated
 @RestController
 @RequestMapping("/api/auth")
 @Tag(name = "Authentication", description = "Authentication management API")
 public class AuthController {
-    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    @Autowired
-    private UserInfoService service;
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private JwtService jwtService;
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+    private static final String AUTHENTICATION_FAILED = "Authentication failed";
+    private static final String INVALID_USER_REQUEST = "Invalid user request";
+    public static final String FAILED_TO_REGISTER_USER = "Failed to register user";
+    public static final String FAILED_TO_RETRIEVE_CURRENT_USER = "Failed to retrieve current user";
+
+    private final UserInfoService userInfoService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+
+    public AuthController(UserInfoService userInfoService, AuthenticationManager authenticationManager, JwtService jwtService) {
+        this.userInfoService = userInfoService;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
+    }
 
     @Operation(summary = "Register a new user", description = "Creates a new user account and returns a JWT token")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully registered",
-                     content = @Content(mediaType = "application/json",
-                                        schema = @Schema(type = "object",
-                                                         example = "{\"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"}"))
-        ),
-        @ApiResponse(responseCode = "400", description = "Invalid input")
+            @ApiResponse(responseCode = "200", description = "Successfully registered",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = TokenDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input")
     })
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterDto registerDto) {
-        User user = Mapper.MapRegisterDtoToUser(registerDto);
-        service.addUser(user);
-        String token = authenticateAndGetToken(Mapper.MapRegisterDtoToLoginDto(registerDto));
-        return ResponseEntity.ok().body("{\"token\": " + token +"}");
+    public ResponseEntity<TokenDto> register(@Valid @RequestBody RegisterDto registerDto) {
+        try {
+            User user = Mapper.MapRegisterDtoToUser(registerDto);
+            userInfoService.addUser(user);
+            String token = authenticateAndGetToken(Mapper.MapRegisterDtoToLoginDto(registerDto));
+            logger.info("User registered successfully: {}", registerDto.getEmail());
+            return ResponseEntity.status(HttpStatus.OK).body(new TokenDto(token));
+        } catch (Exception e) {
+            logger.error("Error during user registration: {}", e.getMessage());
+            throw new RuntimeException(FAILED_TO_REGISTER_USER, e);
+        }
     }
 
     @Operation(summary = "Login user", description = "Authenticates a user and returns a JWT token")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully authenticated",
-                     content = @Content(mediaType = "application/json",
-                                        schema = @Schema(type = "object",
-                                                         example = "{\"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"}"))
-        ),
-        @ApiResponse(responseCode = "401", description = "Authentication failed")
+            @ApiResponse(responseCode = "200", description = "Successfully authenticated",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = TokenDto.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication failed")
     })
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDto.getLogin(), loginDto.getPassword())
-        );
-        if (authentication.isAuthenticated()) {
-            return ResponseEntity.ok().body("{\"token\": " + jwtService.generateToken(authentication) +"}");
-        } else {
-            return ResponseEntity.status(401).body("{\"message\": \"error\"}");
+    public ResponseEntity<?> login(@Valid @RequestBody LoginDto loginDto) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginDto.getLogin(), loginDto.getPassword())
+            );
+            if (authentication.isAuthenticated()) {
+                String token = jwtService.generateToken(authentication);
+                logger.info("User logged in successfully: {}", loginDto.getLogin());
+                return ResponseEntity.ok(new TokenDto(token));
+            } else {
+                logger.warn("Authentication failed for user: {}", loginDto.getLogin());
+                return ResponseEntity.status(401).body("{\"message\": \"error\"}");
+            }
+        } catch (Exception e) {
+            logger.error("Error during login: {}", e.getMessage());
+            throw new RuntimeException(AUTHENTICATION_FAILED);
         }
     }
 
     @Operation(summary = "Get current user", description = "Retrieves the details of the currently authenticated user")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved user details",
-                     content = @Content(mediaType = "application/json",
-                                        schema = @Schema(implementation = User.class))
-        ),
-        @ApiResponse(responseCode = "401", description = "Not authenticated"),
-        @ApiResponse(responseCode = "404", description = "User not found")
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved user details",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = User.class))),
+            @ApiResponse(responseCode = "401", description = "Not authenticated"),
+            @ApiResponse(responseCode = "404", description = "User not found")
     })
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<User> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String token,
-                                                  @RequestHeader HttpHeaders headers) {
-        logger.info("Received request for /api/auth/me");
-        logger.info("Authorization header: {}", token);
-
-        // Log all request headers
-        headers.forEach((key, value) -> logger.info("Header '{}': {}", key, value));
-
+    public ResponseEntity<User> getCurrentUser() {
         try {
-            if (token == null || token.isEmpty()) {
-                logger.warn("Authorization token is missing");
-                return ResponseEntity.badRequest().build();
-            }
-
-            return ResponseEntity.ok().body(jwtService.getCurrentUser());
+            User currentUser = jwtService.getCurrentUser();
+            logger.info("Retrieved current user: {}", currentUser.getEmail());
+            return ResponseEntity.ok(currentUser);
         } catch (Exception e) {
-            logger.error("Error processing getCurrentUser request", e);
-            return ResponseEntity.internalServerError().build();
+            logger.error("Error retrieving current user: {}", e.getMessage());
+            throw new RuntimeException(FAILED_TO_RETRIEVE_CURRENT_USER);
         }
     }
 
-    private String authenticateAndGetToken(LoginDto  loginDto) {
+    private String authenticateAndGetToken(LoginDto loginDto) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDto.getLogin(), loginDto.getPassword())
         );
         if (authentication.isAuthenticated()) {
             return jwtService.generateToken(authentication);
         } else {
-            throw new UsernameNotFoundException("Invalid user request!");
+            logger.warn("Invalid authentication request for user: {}", loginDto.getLogin());
+            throw new RuntimeException(INVALID_USER_REQUEST);
         }
     }
 }
