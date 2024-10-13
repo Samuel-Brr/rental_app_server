@@ -1,6 +1,6 @@
 package com.rental.app.services;
 
-import com.rental.app.Utils.Mapper;
+import com.rental.app.utils.Mapper;
 import com.rental.app.dtos.RentalDto;
 import com.rental.app.entities.Rental;
 import com.rental.app.repositories.RentalRepository;
@@ -74,7 +74,7 @@ public class RentalService {
         logger.debug("Adding new rental: {}", rentalDto);
 
         String filePath = storeFile(rentalDto.getPicture());
-        Rental rental = Mapper.MapRentalDtoToRental(rentalDto, filePath);
+        Rental rental = Mapper.mapRentalDtoToRental(rentalDto, filePath);
         rental.setOwner(jwtService.getCurrentUser());
 
         Rental savedRental = rentalRepository.save(rental);

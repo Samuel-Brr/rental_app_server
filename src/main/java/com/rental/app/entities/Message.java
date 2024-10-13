@@ -36,4 +36,10 @@ public class Message {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public Message(String message, User user, Rental rental) {
+        this.message = message;
+        this.user = user;
+        this.rental = rental;
+    }
 }

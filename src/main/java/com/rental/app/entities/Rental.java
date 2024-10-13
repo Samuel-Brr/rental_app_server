@@ -43,6 +43,14 @@ public class Rental {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    public Rental(String name, BigDecimal bigDecimal, BigDecimal bigDecimal1, String pictureUrl, String description) {
+        this.name = name;
+        this.surface = bigDecimal;
+        this.price = bigDecimal1;
+        this.picture = pictureUrl;
+        this.description = description;
+    }
+
     @JsonProperty("owner_id")
     public Long getOwnerId() {
         return owner != null ? owner.getId() : null;

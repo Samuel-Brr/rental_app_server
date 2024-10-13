@@ -1,6 +1,6 @@
 package com.rental.app.controllers;
 
-import com.rental.app.Utils.Mapper;
+import com.rental.app.utils.Mapper;
 import com.rental.app.dtos.LoginDto;
 import com.rental.app.dtos.RegisterDto;
 import com.rental.app.entities.User;
@@ -60,9 +60,9 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<TokenDto> register(@Valid @RequestBody RegisterDto registerDto) {
         try {
-            User user = Mapper.MapRegisterDtoToUser(registerDto);
+            User user = Mapper.mapRegisterDtoToUser(registerDto);
             userInfoService.addUser(user);
-            String token = authenticateAndGetToken(Mapper.MapRegisterDtoToLoginDto(registerDto));
+            String token = authenticateAndGetToken(Mapper.mapRegisterDtoToLoginDto(registerDto));
             logger.info("User registered successfully: {}", registerDto.getEmail());
             return ResponseEntity.status(HttpStatus.OK).body(new TokenDto(token));
         } catch (Exception e) {

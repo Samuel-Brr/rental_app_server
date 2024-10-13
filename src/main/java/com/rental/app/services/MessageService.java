@@ -1,6 +1,6 @@
 package com.rental.app.services;
 
-import com.rental.app.Utils.Mapper;
+import com.rental.app.utils.Mapper;
 import com.rental.app.dtos.MessageDto;
 import com.rental.app.entities.Message;
 import com.rental.app.entities.Rental;
@@ -44,7 +44,7 @@ public class MessageService {
         User user = getUserForMessage(messageDto.getUser_id());
         Rental rental = getRentalForMessage(messageDto.getRental_id());
 
-        Message message = Mapper.MapMessageDtoToMessage(messageDto, user, rental);
+        Message message = Mapper.mapMessageDtoToMessage(messageDto, user, rental);
         Message savedMessage = messageRepository.save(message);
 
         logger.info("Message added successfully with ID: {}", savedMessage.getId());
