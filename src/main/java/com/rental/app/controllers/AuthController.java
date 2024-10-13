@@ -7,6 +7,12 @@ import com.rental.app.dtos.UserDto;
 import com.rental.app.entities.User;
 import com.rental.app.services.JwtService;
 import com.rental.app.services.UserInfoService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "Authentication management API")
 public class AuthController {
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
@@ -35,6 +42,15 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
+    @Operation(summary = "Register a new user", description = "Creates a new user account and returns a JWT token")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully registered",
+                     content = @Content(mediaType = "application/json",
+                                        schema = @Schema(type = "object",
+                                                         example = "{\"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"}"))
+        ),
+        @ApiResponse(responseCode = "400", description = "Invalid input")
+    })
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterDto registerDto) {
         User user = Mapper.MapRegisterDtoToUser(registerDto);
@@ -43,6 +59,15 @@ public class AuthController {
         return ResponseEntity.ok().body("{\"token\": " + token +"}");
     }
 
+    @Operation(summary = "Login user", description = "Authenticates a user and returns a JWT token")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully authenticated",
+                     content = @Content(mediaType = "application/json",
+                                        schema = @Schema(type = "object",
+                                                         example = "{\"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"}"))
+        ),
+        @ApiResponse(responseCode = "401", description = "Authentication failed")
+    })
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
         Authentication authentication = authenticationManager.authenticate(
@@ -55,6 +80,15 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "Get current user", description = "Retrieves the details of the currently authenticated user")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved user details",
+                     content = @Content(mediaType = "application/json",
+                                        schema = @Schema(implementation = UserDto.class))
+        ),
+        @ApiResponse(responseCode = "401", description = "Not authenticated"),
+        @ApiResponse(responseCode = "404", description = "User not found")
+    })
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserDto> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String token,
                                                   @RequestHeader HttpHeaders headers) {
