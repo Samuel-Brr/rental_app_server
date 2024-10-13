@@ -48,11 +48,15 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // No sessions
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("api/auth/register", "api/auth/login").permitAll()
+                        .requestMatchers(
+                                "api/auth/register",
+                                "api/auth/login",
+                                "v3/api-docs/**",
+                                "swagger-ui/**",
+                                "webjars/**").permitAll()
                         .anyRequest().authenticated() // Protect all other endpoints
                 )
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()))
-                .httpBasic(Customizer.withDefaults())
                 .build();
     }
 
