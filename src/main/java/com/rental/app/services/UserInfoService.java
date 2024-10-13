@@ -38,4 +38,8 @@ public class UserInfoService implements UserDetailsService {
         repository.save(user);
         return "User Added Successfully";
     }
+
+    public User getUserById(Long id) {
+        return repository.getReferenceById(id);
+    }
 }

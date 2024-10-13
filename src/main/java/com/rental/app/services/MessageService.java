@@ -19,7 +19,7 @@ public class MessageService {
     @Autowired
     private MessageRepository messageRepository;
     @Autowired
-    private UserService userService;
+    private UserInfoService userService;
     @Autowired
     private RentalService rentalService;
 

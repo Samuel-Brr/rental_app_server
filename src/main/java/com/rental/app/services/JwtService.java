@@ -2,6 +2,9 @@ package com.rental.app.services;
 
 import com.rental.app.entities.User;
 import com.rental.app.repositories.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,49 +23,67 @@ import java.time.temporal.ChronoUnit;
 @Service
 public class JwtService {
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
+
     private final JwtEncoder jwtEncoder;
     private final UserRepository userRepository;
+
+    @Value("${jwt.issuer}")
+    private String jwtIssuer;
+
+    @Value("${jwt.expiration.hours}")
+    private long jwtExpirationHours;
 
     public JwtService(JwtEncoder jwtEncoder, UserRepository userRepository) {
         this.jwtEncoder = jwtEncoder;
         this.userRepository = userRepository;
     }
 
+    /**
+     * Generates a JWT token for the given authentication.
+     *
+     * @param authentication The authentication object.
+     * @return A JWT token as a string.
+     */
     public String generateToken(Authentication authentication) {
+        logger.debug("Generating token for user: {}", authentication.getName());
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("self")
+                .issuer(jwtIssuer)
                 .issuedAt(now)
-                .expiresAt(now.plus(1, ChronoUnit.DAYS))
+                .expiresAt(now.plus(jwtExpirationHours, ChronoUnit.HOURS))
                 .subject(authentication.getName())
                 .build();
         JwtEncoderParameters jwtEncoderParameters = JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims);
-        return this.jwtEncoder.encode(jwtEncoderParameters).getTokenValue();
+        String token = this.jwtEncoder.encode(jwtEncoderParameters).getTokenValue();
+        logger.info("Token generated successfully for user: {}", authentication.getName());
+        return token;
     }
 
     /**
      * Retrieves the current authenticated user based on the JWT in the SecurityContext.
      *
      * @return The User entity of the currently authenticated user.
-     * @throws IllegalStateException if no authentication is found in the SecurityContext.
+     * @throws RuntimeException if no authentication is found in the SecurityContext.
      * @throws UsernameNotFoundException if the user corresponding to the JWT subject is not found.
      */
     public User getCurrentUser() {
-        // Get the authentication object from the security context
-        JwtAuthenticationToken authentication = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null) {
-            throw new IllegalStateException("No authentication found in SecurityContext");
+        if (!(authentication instanceof JwtAuthenticationToken jwtAuthenticationToken)) {
+            logger.error("No JWT authentication found in SecurityContext");
+            throw new RuntimeException("No JWT authentication found");
         }
 
-        // Get the JWT token
-        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Jwt jwt = (Jwt) jwtAuthenticationToken.getPrincipal();
 
-        // Extract the user identifier from the JWT claims
-        String userEmail = jwt.getClaimAsString("sub"); // Assuming email is used as identifier
+        String userEmail = jwt.getSubject();
+        logger.debug("Retrieving user for email: {}", userEmail);
 
-        // Find and return the user
         return userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found for email: " + userEmail));
+                .orElseThrow(() -> {
+                    logger.error("User not found for email: {}", userEmail);
+                    return new UsernameNotFoundException("User not found for email: " + userEmail);
+                });
     }
 }

@@ -1,7 +1,7 @@
 package com.rental.app.controllers;
 
 import com.rental.app.entities.User;
-import com.rental.app.services.UserService;
+import com.rental.app.services.UserInfoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -29,9 +29,9 @@ public class UsersController {
 
     private static final Logger logger = LoggerFactory.getLogger(UsersController.class);
 
-    private final UserService userService;
+    private final UserInfoService userService;
 
-    public UsersController(UserService userService) {
+    public UsersController(UserInfoService userService) {
         this.userService = userService;
     }
 
