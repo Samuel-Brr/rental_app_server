@@ -4,9 +4,11 @@ import com.rental.app.Utils.Mapper;
 import com.rental.app.dtos.RentalDto;
 import com.rental.app.entities.Rental;
 import com.rental.app.repositories.RentalRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,50 +28,103 @@ import java.util.UUID;
 @Service
 public class RentalService {
 
+    private static final Logger logger = LoggerFactory.getLogger(RentalService.class);
+
     @Value("${app.upload.dir:${user.home}}")
-    private String UPLOAD_DIR;
+    private String uploadDir;
 
-    @Autowired
-    private RentalRepository rentalRepo;
-    @Autowired
-    private JwtService jwtService;
+    private final RentalRepository rentalRepository;
+    private final JwtService jwtService;
 
+    public RentalService(RentalRepository rentalRepository, JwtService jwtService) {
+        this.rentalRepository = rentalRepository;
+        this.jwtService = jwtService;
+    }
+
+    /**
+     * Retrieves a rental by its ID.
+     *
+     * @param id The ID of the rental to retrieve.
+     * @return The Rental entity.
+     * @throws RuntimeException if the rental is not found.
+     */
     public Rental getRentalById(Long id) {
-        return rentalRepo.getReferenceById(id);
+        return rentalRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Rental not found with id: " + id));
     }
 
+    /**
+     * Retrieves all rentals.
+     *
+     * @return A list of all Rental entities.
+     */
     public List<Rental> getAllRentals() {
-        return rentalRepo.findAll();
+        return rentalRepository.findAll();
     }
 
+    /**
+     * Adds a new rental.
+     *
+     * @param rentalDto The DTO containing the rental details.
+     * @return The created Rental entity.
+     * @throws RuntimeException() if there's an error storing the picture file.
+     */
+    @Transactional
     public Rental addRental(RentalDto rentalDto) {
-        MultipartFile picture = rentalDto.getPicture();
+        logger.debug("Adding new rental: {}", rentalDto);
+
+        String filePath = storeFile(rentalDto.getPicture());
+        Rental rental = Mapper.MapRentalDtoToRental(rentalDto, filePath);
+        rental.setOwner(jwtService.getCurrentUser());
+
+        Rental savedRental = rentalRepository.save(rental);
+        logger.info("Rental added successfully with ID: {}", savedRental.getId());
+        return savedRental;
+    }
+
+    /**
+     * Updates an existing rental.
+     *
+     * @param rentalDto The DTO containing the updated rental details.
+     * @param id The ID of the rental to update.
+     * @return The updated Rental entity.
+     * @throws RuntimeException if the rental is not found.
+     */
+    @Transactional
+    public Rental updateRental(RentalDto rentalDto, Long id) {
+        logger.debug("Updating rental with ID: {}", id);
+
+        Rental rental = getRentalById(id);
+        updateRentalFields(rental, rentalDto);
+
+        Rental updatedRental = rentalRepository.save(rental);
+        logger.info("Rental updated successfully with ID: {}", updatedRental.getId());
+        return updatedRental;
+    }
+
+    private String storeFile(MultipartFile file) {
         try {
-            String fileName = StringUtils.cleanPath(Objects.requireNonNull(picture.getOriginalFilename()));
+            String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
             String fileExtension = StringUtils.getFilenameExtension(fileName);
             String uniqueFileName = UUID.randomUUID() + "." + fileExtension;
 
-            Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
             Files.createDirectories(uploadPath);
 
             Path filePath = uploadPath.resolve(uniqueFileName);
-            Files.copy(picture.getInputStream(), filePath);
+            Files.copy(file.getInputStream(), filePath);
 
-            Rental rental = Mapper.MapRentalDtoToRental(rentalDto, filePath.toString());
-            rental.setOwner(jwtService.getCurrentUser());
-            return rentalRepo.save(rental);
+            return filePath.toString();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Failed to store file", e);
             throw new RuntimeException("Failed to store file", e);
         }
     }
 
-    public Rental updateRental(RentalDto rentalDto, Long id) {
-        Rental rental = rentalRepo.getReferenceById(id);
+    private void updateRentalFields(Rental rental, RentalDto rentalDto) {
         rental.setName(rentalDto.getName());
         rental.setSurface(new BigDecimal(rentalDto.getSurface()));
         rental.setPrice(new BigDecimal(rentalDto.getPrice()));
         rental.setDescription(rentalDto.getDescription());
-        return rentalRepo.save(rental);
     }
 }
