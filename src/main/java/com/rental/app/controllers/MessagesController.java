@@ -1,6 +1,7 @@
 package com.rental.app.controllers;
 
 import com.rental.app.dtos.MessageDto;
+import com.rental.app.dtos.MessageRecord;
 import com.rental.app.services.MessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -44,23 +45,21 @@ public class MessagesController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Message sent successfully",
                      content = @Content(mediaType = "application/json",
-                                        schema = @Schema(implementation = MessageResponse.class))),
+                                        schema = @Schema(implementation = MessageRecord.class))),
         @ApiResponse(responseCode = "400", description = "Invalid input"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "404", description = "Rental or User not found")
     })
     @PostMapping
-    public ResponseEntity<MessageResponse> sendMessage(@Valid @RequestBody MessageDto messageDto) {
+    public ResponseEntity<MessageRecord> sendMessage(@Valid @RequestBody MessageDto messageDto) {
         try {
             messageService.addMessage(messageDto);
             logger.info("Message sent successfully: {}", messageDto);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new MessageResponse(MESSAGE_SENT_SUCCESS));
+                    .body(new MessageRecord(MESSAGE_SENT_SUCCESS));
         } catch (Exception e) {
             logger.error("Unexpected error: {}", messageDto, e);
             throw new RuntimeException("An unexpected error occurred", e);
         }
     }
-
-    public record MessageResponse(String message) {}
 }
