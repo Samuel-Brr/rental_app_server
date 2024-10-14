@@ -1,7 +1,8 @@
 package com.rental.app.controllers;
 
 import com.rental.app.dtos.MessageRecord;
-import com.rental.app.dtos.RentalDto;
+import com.rental.app.dtos.CreateRentalDto;
+import com.rental.app.dtos.UpdateRentalDto;
 import com.rental.app.entities.Rental;
 import com.rental.app.services.RentalService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,7 +30,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/rentals")
 @Tag(name = "Rentals", description = "Rental management API")
-@SecurityRequirement(name = "bearerAuth")
+@SecurityRequirement(name = "Bearer Authentication")
 @Validated
 public class RentalsController {
 
@@ -91,13 +92,13 @@ public class RentalsController {
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MessageRecord> createRental(@Valid @ModelAttribute RentalDto rentalDto) {
+    public ResponseEntity<MessageRecord> createRental(@Valid @ModelAttribute CreateRentalDto createRentalDto) {
         try {
-            rentalService.addRental(rentalDto);
-            logger.info("Created new rental: {}", rentalDto);
+            rentalService.addRental(createRentalDto);
+            logger.info("Created new rental: {}", createRentalDto);
             return ResponseEntity.status(HttpStatus.OK).body(new MessageRecord(RENTAL_CREATED));
         } catch (Exception e) {
-            logger.error("Error creating rental: {}", rentalDto, e);
+            logger.error("Error creating rental: {}", createRentalDto, e);
             throw new RuntimeException("An unexpected error occurred while creating the rental", e);
         }
     }
@@ -112,9 +113,9 @@ public class RentalsController {
             @ApiResponse(responseCode = "404", description = "Rental not found")
     })
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MessageRecord> updateRental(@PathVariable Long id, @Valid @ModelAttribute RentalDto rentalDto) {
+    public ResponseEntity<MessageRecord> updateRental(@PathVariable Long id, @Valid @ModelAttribute UpdateRentalDto updateRentalDto) {
         try {
-            rentalService.updateRental(rentalDto, id);
+            rentalService.updateRental(updateRentalDto, id);
             logger.info("Updated rental with id: {}", id);
             return ResponseEntity.ok(new MessageRecord(RENTAL_UPDATED));
         } catch (Exception e) {

@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
  * This service implements Spring Security's UserDetailsService interface
  * and provides methods for user authentication, creation, and retrieval.
  */
-@Service
+@Service("userDetailsService")
 public class UserInfoService implements UserDetailsService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserInfoService.class);

@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -50,6 +52,7 @@ public class AuthController {
         this.jwtService = jwtService;
     }
 
+    @SecurityRequirements
     @Operation(summary = "Register a new user", description = "Creates a new user account and returns a JWT token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully registered",
@@ -71,6 +74,7 @@ public class AuthController {
         }
     }
 
+    @SecurityRequirements
     @Operation(summary = "Login user", description = "Authenticates a user and returns a JWT token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully authenticated",
@@ -107,6 +111,7 @@ public class AuthController {
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<User> getCurrentUser() {
         try {
             User currentUser = jwtService.getCurrentUser();

@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/messages")
 @Tag(name = "Messages", description = "Message management API")
-@SecurityRequirement(name = "bearerAuth")
+@SecurityRequirement(name = "Bearer Authentication")
 @Validated
 public class MessagesController {
 
@@ -55,7 +55,7 @@ public class MessagesController {
         try {
             messageService.addMessage(messageDto);
             logger.info("Message sent successfully: {}", messageDto);
-            return ResponseEntity.status(HttpStatus.CREATED)
+            return ResponseEntity.status(HttpStatus.OK)
                     .body(new MessageRecord(MESSAGE_SENT_SUCCESS));
         } catch (Exception e) {
             logger.error("Unexpected error: {}", messageDto, e);

@@ -1,7 +1,8 @@
 package com.rental.app.services;
 
+import com.rental.app.dtos.UpdateRentalDto;
 import com.rental.app.utils.Mapper;
-import com.rental.app.dtos.RentalDto;
+import com.rental.app.dtos.CreateRentalDto;
 import com.rental.app.entities.Rental;
 import com.rental.app.repositories.RentalRepository;
 import org.slf4j.Logger;
@@ -65,16 +66,16 @@ public class RentalService {
     /**
      * Adds a new rental.
      *
-     * @param rentalDto The DTO containing the rental details.
+     * @param createRentalDto The DTO containing the rental details.
      * @return The created Rental entity.
      * @throws RuntimeException() if there's an error storing the picture file.
      */
     @Transactional
-    public Rental addRental(RentalDto rentalDto) {
-        logger.debug("Adding new rental: {}", rentalDto);
+    public Rental addRental(CreateRentalDto createRentalDto) {
+        logger.debug("Adding new rental: {}", createRentalDto);
 
-        String filePath = storeFile(rentalDto.getPicture());
-        Rental rental = Mapper.mapRentalDtoToRental(rentalDto, filePath);
+        String filePath = storeFile(createRentalDto.getPicture());
+        Rental rental = Mapper.mapRentalDtoToRental(createRentalDto, filePath);
         rental.setOwner(jwtService.getCurrentUser());
 
         Rental savedRental = rentalRepository.save(rental);
@@ -85,17 +86,17 @@ public class RentalService {
     /**
      * Updates an existing rental.
      *
-     * @param rentalDto The DTO containing the updated rental details.
+     * @param updateRentalDto The DTO containing the updated rental details.
      * @param id The ID of the rental to update.
      * @return The updated Rental entity.
      * @throws RuntimeException if the rental is not found.
      */
     @Transactional
-    public Rental updateRental(RentalDto rentalDto, Long id) {
+    public Rental updateRental(UpdateRentalDto updateRentalDto, Long id) {
         logger.debug("Updating rental with ID: {}", id);
 
         Rental rental = getRentalById(id);
-        updateRentalFields(rental, rentalDto);
+        updateRentalFields(rental, updateRentalDto);
 
         Rental updatedRental = rentalRepository.save(rental);
         logger.info("Rental updated successfully with ID: {}", updatedRental.getId());
@@ -121,10 +122,10 @@ public class RentalService {
         }
     }
 
-    private void updateRentalFields(Rental rental, RentalDto rentalDto) {
-        rental.setName(rentalDto.getName());
-        rental.setSurface(new BigDecimal(rentalDto.getSurface()));
-        rental.setPrice(new BigDecimal(rentalDto.getPrice()));
-        rental.setDescription(rentalDto.getDescription());
+    private void updateRentalFields(Rental rental, UpdateRentalDto updateRentalDto) {
+        rental.setName(updateRentalDto.getName());
+        rental.setSurface(new BigDecimal(updateRentalDto.getSurface()));
+        rental.setPrice(new BigDecimal(updateRentalDto.getPrice()));
+        rental.setDescription(updateRentalDto.getDescription());
     }
 }

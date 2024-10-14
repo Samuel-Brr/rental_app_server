@@ -3,7 +3,7 @@ package com.rental.app.utils;
 import com.rental.app.dtos.LoginDto;
 import com.rental.app.dtos.MessageDto;
 import com.rental.app.dtos.RegisterDto;
-import com.rental.app.dtos.RentalDto;
+import com.rental.app.dtos.CreateRentalDto;
 import com.rental.app.entities.Message;
 import com.rental.app.entities.Rental;
 import com.rental.app.entities.User;
@@ -64,21 +64,21 @@ public final class Mapper {
     /**
      * Maps a RentalDto to a Rental entity.
      *
-     * @param rentalDto The RentalDto to map.
+     * @param createRentalDto The RentalDto to map.
      * @param pictureUrl The URL of the rental's picture.
      * @return A new Rental entity.
      * @throws NullPointerException if rentalDto is null.
      * @throws NumberFormatException if surface or price in rentalDto are not valid numbers.
      */
-    public static Rental mapRentalDtoToRental(RentalDto rentalDto, String pictureUrl) {
-        Objects.requireNonNull(rentalDto, "RentalDto must not be null");
+    public static Rental mapRentalDtoToRental(CreateRentalDto createRentalDto, String pictureUrl) {
+        Objects.requireNonNull(createRentalDto, "RentalDto must not be null");
         Objects.requireNonNull(pictureUrl, "PictureUrl must not be null");
         return new Rental(
-            rentalDto.getName(),
-            new BigDecimal(rentalDto.getSurface()),
-            new BigDecimal(rentalDto.getPrice()),
+            createRentalDto.getName(),
+            new BigDecimal(createRentalDto.getSurface()),
+            new BigDecimal(createRentalDto.getPrice()),
             pictureUrl,
-            rentalDto.getDescription()
+            createRentalDto.getDescription()
         );
     }
 }
