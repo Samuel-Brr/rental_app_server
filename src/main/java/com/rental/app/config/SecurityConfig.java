@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/api/rentals/image/**",
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/v3/api-docs/**",

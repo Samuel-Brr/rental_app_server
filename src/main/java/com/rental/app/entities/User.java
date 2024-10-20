@@ -1,6 +1,7 @@
 package com.rental.app.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -28,10 +29,12 @@ public class User {
     @JsonIgnore
     private String password;
 
+    @JsonProperty("created_at")
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @JsonProperty("updated_at")
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;

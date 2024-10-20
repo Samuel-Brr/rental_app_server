@@ -2,6 +2,7 @@ package com.rental.app.controllers;
 
 import com.rental.app.dtos.MessageRecord;
 import com.rental.app.dtos.CreateRentalDto;
+import com.rental.app.dtos.RentalsRecord;
 import com.rental.app.dtos.UpdateRentalDto;
 import com.rental.app.entities.Rental;
 import com.rental.app.services.RentalService;
@@ -15,12 +16,19 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -37,6 +45,8 @@ public class RentalsController {
     private static final Logger logger = LoggerFactory.getLogger(RentalsController.class);
     private static final String RENTAL_CREATED = "Rental created !";
     private static final String RENTAL_UPDATED = "Rental updated !";
+    @Value("${app.upload.dir:${user.home}}")
+    private String uploadDir;
 
     private final RentalService rentalService;
 
@@ -48,15 +58,15 @@ public class RentalsController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved list of rentals",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "array", implementation = Rental.class))),
+                            schema = @Schema(type = "array", implementation = RentalsRecord.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping
-    public ResponseEntity<List<Rental>> getAllRentals() {
+    public ResponseEntity<RentalsRecord> getAllRentals() {
         try {
             List<Rental> rentals = rentalService.getAllRentals();
             logger.info("Retrieved {} rentals", rentals.size());
-            return ResponseEntity.ok(rentals);
+            return ResponseEntity.ok(new RentalsRecord(rentals));
         } catch (Exception e) {
             logger.error("Error retrieving all rentals", e);
             throw new RuntimeException("An unexpected error occurred while retrieving rentals", e);
@@ -121,6 +131,24 @@ public class RentalsController {
         } catch (Exception e) {
             logger.error("Error updating rental with id: {}", id, e);
             throw new RuntimeException("An unexpected error occurred while updating the rental", e);
+        }
+    }
+
+    @GetMapping("/image/{filename}")
+    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+        try {
+            Path file = Paths.get(uploadDir).resolve(filename);
+            Resource resource = new UrlResource(file.toUri());
+
+            if (resource.exists() || resource.isReadable()) {
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                        .body(resource);
+            } else {
+                throw new RuntimeException("Could not read the file!");
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Error: " + e.getMessage());
         }
     }
 }
