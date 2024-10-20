@@ -54,8 +54,7 @@ public class JwtService {
                 .expiresAt(now.plus(jwtExpirationHours, ChronoUnit.HOURS))
                 .subject(authentication.getName())
                 .build();
-        JwtEncoderParameters jwtEncoderParameters = JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims);
-        String token = this.jwtEncoder.encode(jwtEncoderParameters).getTokenValue();
+        String token = this.jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
         logger.info("Token generated successfully for user: {}", authentication.getName());
         return token;
     }

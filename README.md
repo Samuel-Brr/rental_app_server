@@ -41,15 +41,20 @@ spring.datasource.url=jdbc:mysql://localhost:your-path/rentalapp
 spring.jpa.hibernate.ddl-auto=update
 ```
 
-### 3. Configure Application Properties
+### 3. Configure JWT
 
 Update the `application-secret.properties` file with the following configurations:
 
 ```properties
-jwt.secret.key=yourLongJwtKey
 jwt.issuer=issuerOfYourJwt
 ```
-Replace `your_jwt_secret_key` with a secure random string.
+Generate your private and public key with the following commands :
+```bash
+openssl genrsa -out app.key 2048
+openssl pkcs8 -topk8 -inform PEM -outform PEM -in app.key -out private_key_pkcs8.pem -nocrypt
+openssl rsa -in app.key -pubout -out app.pub
+```
+Then place them in the src/main/resources folder
 
 ### 4. Build the Project
 
