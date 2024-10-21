@@ -6,6 +6,7 @@ import com.rental.app.dtos.RentalsRecord;
 import com.rental.app.dtos.UpdateRentalDto;
 import com.rental.app.entities.Rental;
 import com.rental.app.services.RentalService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -134,6 +135,7 @@ public class RentalsController {
         }
     }
 
+    @Hidden
     @GetMapping("/image/{filename}")
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
         try {
